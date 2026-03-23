@@ -9,10 +9,10 @@ def test_groq():
         client = groq.Groq(api_key=os.getenv("GROQ_API_KEY"))
         
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": "Hello, how are you?"}],
             temperature=0.7,
-            max_tokens=100
+            max_tokens=500
         )
         
         print("✅ Groq test successful!")

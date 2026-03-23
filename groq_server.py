@@ -6,14 +6,32 @@ import os
 import groq
 from dotenv import load_dotenv
 import traceback
-
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware  # <--- 1. ADD THIS IMPORT
+from pydantic import BaseModel
 load_dotenv()
+
+# ... existing imports ...
+from fastapi.middleware.cors import CORSMiddleware # <--- ADD THIS IMPORT
+
+# ... existing code ...
 
 app = FastAPI(
     title="AI Question-Answer Helper",
-    description="Simple AI agent with search tool - Powered by Groq",
-    version="4.1.0"
+    description="Simple AI agent with search tool - Powered by Groq-Developed by KEVIN",
+    version="8.1.0"
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all connections
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ▲▲▲ END OF NEW BLOCK ▲▲▲
 
 # Enhanced knowledge base with better organization
 knowledge_base = {

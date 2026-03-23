@@ -1,6 +1,6 @@
 import os
 from typing import Dict, Any, List
-import openai
+import groq
 from dotenv import load_dotenv
 
 # Use absolute imports
@@ -22,7 +22,7 @@ class AIQuestionAnswerAgent:
         if not api_key:
             raise ValueError("GROQ_API_KEY not found in environment variables")
             
-        openai.api_key = api_key
+        groq.api_key = api_key
         self.search_tool = SearchTool()
         self.memory = ShortTermMemory()
         
@@ -36,7 +36,7 @@ class AIQuestionAnswerAgent:
         4. Use the conversation history for context when relevant.
         
         Always think step by step before responding."""
-    
+
     def is_factual_question(self, question: str) -> bool:
         """Determine if a question is factual and requires search"""
         factual_keywords = [
@@ -95,7 +95,7 @@ class AIQuestionAnswerAgent:
         
         # Generate response using OpenAI (compatible with 0.28.1)
         try:
-            response = openai.ChatCompletion.create(
+            response = groq.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=messages,
                 temperature=0.1,
