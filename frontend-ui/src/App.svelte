@@ -130,7 +130,11 @@
         }
         
         try { 
-            await fetch(CLEAR_URL, { method: 'POST' }); 
+            await fetch(CLEAR_URL, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: "default" })
+            });
         } catch (e) {
             console.error("Failed to clear backend memory");
         }

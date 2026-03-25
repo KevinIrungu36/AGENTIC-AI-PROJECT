@@ -1,16 +1,16 @@
 import os
 from typing import Dict, Any, List
-import groq
+from groq import Groq
 from dotenv import load_dotenv
 
-# Use absolute imports
+
 try:
     from app.tools import SearchTool
-    from app.memory import ShortTermMemory
+    from app.memory import MongoMemory  # Updated import
 except ImportError:
-    # Fallback for direct execution
-    from tools import SearchTool
-    from app.memory import ShortTermMemory
+
+    from app.tools import SearchTool
+    from app.memory import MongoMemory  # Updated import
 
 load_dotenv()
 
@@ -22,13 +22,16 @@ class AIQuestionAnswerAgent:
         if not api_key:
             raise ValueError("GROQ_API_KEY not found in environment variables")
             
-        groq.api_key = api_key
+        self.groq_client = Groq(api_key=api_key)
         self.search_tool = SearchTool()
-        self.memory = ShortTermMemory()
         
-        # System prompt
+        # Initialize MongoDB Memory
+        self.memory = MongoMemory() 
+        
+
+        
         self.system_prompt = """You are a helpful AI assistant that can answer questions and use tools.
-        
+    
         Guidelines:
         1. If the question is factual (about facts, data, numbers, definitions, etc.), use the search tool.
         2. For conversational questions, philosophical questions, or opinions, answer directly.
@@ -74,44 +77,48 @@ class AIQuestionAnswerAgent:
         
         return messages
     
-    def generate_response(self, user_message: str) -> Dict[str, Any]:
+    def generate_response(self, user_message: str, user_id: str = "default") -> Dict[str, Any]:
         """Generate response with tool usage and memory"""
-        # Add user message to memory
-        self.memory.add_message("user", user_message)
+        # Add user message to MongoDB
+        self.memory.add_message(user_id, "user", user_message)
         
-        # Get conversation context
-        context = self.memory.get_recent_context()
+        # Get conversation context specific to the user from MongoDB
+        context = self.memory.get_recent_context(user_id)
         
-        # Determine if factual question
+
         is_factual = self.is_factual_question(user_message)
         tool_result = None
         
         if is_factual:
-            # Use search tool for factual questions
+
             tool_result = self.search_tool(user_message)
         
-        # Prepare messages for OpenAI
+
         messages = self._create_message_list(context, user_message, is_factual, tool_result)
         
-        # Generate response using OpenAI (compatible with 0.28.1)
+
         try:
-            response = groq.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+            # --- FIXED MODEL NAME ---
+            response = self.groq_client.chat.completions.create(
+                model="openai/gpt-oss-120b", # Changed to a valid Groq model
                 messages=messages,
                 temperature=0.1,
                 max_tokens=500
             )
+
+            final_answer = response.choices.message.content
             
-            final_answer = response.choices[0].message.content
         except Exception as e:
-            # Fallback response if OpenAI call fails
+            # --- ADDED DEBUG PRINT ---
+            print(f"❌ Groq API Error: {e}") 
+            
             if is_factual and tool_result:
                 final_answer = f"Based on my search: {tool_result}"
             else:
                 final_answer = "I apologize, but I'm having trouble processing your request right now. Please try again."
         
-        # Add AI response to memory
-        self.memory.add_message("assistant", final_answer)
+        # Add AI response to MongoDB
+        self.memory.add_message(user_id, "assistant", final_answer)
         
         return {
             "response": final_answer,

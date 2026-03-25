@@ -4,4 +4,4 @@ python-dotenv
 requests
 pydantic
 groq
-pymongo
+pymongo==3.12
