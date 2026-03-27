@@ -11,8 +11,8 @@ def test_groq():
         response = client.chat.completions.create(
             model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": "Hello, how are you?"}],
-            temperature=0.7,
-            max_tokens=500
+            temperature=0.1,
+            max_tokens=100
         )
         
         print("✅ Groq test successful!")

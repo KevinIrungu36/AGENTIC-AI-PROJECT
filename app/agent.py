@@ -102,11 +102,11 @@ class AIQuestionAnswerAgent:
             response = self.groq_client.chat.completions.create(
                 model="openai/gpt-oss-120b", # Changed to a valid Groq model
                 messages=messages,
-                temperature=0.1,
+                temperature=0.7,
                 max_tokens=500
             )
 
-            final_answer = response.choices.message.content
+            final_answer = response.choices[0].message.content
             
         except Exception as e:
             # --- ADDED DEBUG PRINT ---

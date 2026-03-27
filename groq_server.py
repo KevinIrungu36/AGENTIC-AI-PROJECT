@@ -1,5 +1,6 @@
 import os
 
+from random import choices
 import traceback
 from datetime import datetime
 from typing import Optional
@@ -176,55 +177,39 @@ def is_factual_question(question: str) -> bool:
     return any(keyword in question.lower() for keyword in factual_keywords)
 
 def generate_groq_response(messages: list) -> str:
-    """Generate response using Groq API with latest models"""
+    """Generate response using Groq API with heavy debugging"""
     if not groq_client:
         return "I'm currently unavailable. Please check if the Groq API key is properly configured."
     
-    # 1. UPDATED MODELS: Using currently active Groq models
+    # Use only confirmed, active Groq models
     available_models = [
-        "openai/gpt-oss-120b", 
-        "llama-3.1-8b-instant",
-        "llama-3.1-8b-instant"
+        "openai/gpt-oss-120b"
     ]
     
     for model in available_models:
         try:
-            print(f"🔄 Trying model: {model}")
+            print(f"--- DEBUG: Attempting model {model} ---")
             response = groq_client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=0.7,
-                max_tokens=1024
+                max_tokens=500
             )
-            print(f"✅ Success with model: {model}")
             
-            # --- UPDATED: Ultra-resilient extraction ---
-            try:
-                # Grab the first item from choices safely
-                choice = response.choices
+            # This is where the 'list' error usually happens. 
+            # We will use a more robust way to grab the content.
+            if hasattr(response, 'choices') and len(response.choices) > 0:
+                content = response.choices[0].message.content
+                print(f"✅ Success with {model}!")
+                return content
+            else:
+                print(f"⚠️ API returned success but no choices: {response}")
                 
-                # If Groq weirdly wrapped the choice in another list, unwrap it
-                if isinstance(choice, list):
-                    choice = choice
-                    
-                # If it's a standard Python object
-                if hasattr(choice, "message"):
-                    return choice.message.content
-                
-                # If it parsed as a dictionary instead
-                elif isinstance(choice, dict):
-                    return choice.get("message", {}).get("content", str(response))
-                    
-            except Exception as extract_error:
-                print(f"⚠️ Extraction failed, falling back. Error: {extract_error}")
-                return str(response)
-                
-        # THIS IS THE MISSING BLOCK THAT GOT DELETED
         except Exception as api_error:
-            print(f"❌ Model {model} failed: {api_error}")
+            # THIS PRINT IS CRITICAL - Watch your terminal for this output!
+            print(f"❌ Model {model} failed with error: {str(api_error)}")
             continue
             
-    # Ultimate fallback if all models fail
     return "I'm currently experiencing technical difficulties with the AI service. However, I can still answer questions using my built-in knowledge base for factual information."
 # --- API ENDPOINTS ---
 @app.get("/")
